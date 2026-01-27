@@ -5,15 +5,18 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ✅ GET handler (browser test)
-export function GET() {
-  return NextResponse.json({
-    status: "API is live 🚀",
-    message: "Use POST to get AI meal suggestions",
+// ✅ REQUIRED FOR BROWSERS / REQBIN
+export function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
   });
 }
 
-// ✅ POST handler (real AI)
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,24 +24,24 @@ export async function POST(req: Request) {
 
     if (!country) {
       return NextResponse.json(
-        { error: "Missing country" },
+        { error: "Country is required" },
         { status: 400 }
       );
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
           content:
-            "You are a helpful chef assistant. Respond ONLY with valid JSON.",
+            "You are a chef assistant. Respond ONLY with valid JSON.",
         },
         {
           role: "user",
           content: `
 Give 5 popular meals from ${country}.
-Return ONLY JSON in this format:
+Return ONLY JSON like:
 [
   { "name": "Meal name", "imagePrompt": "short food description" }
 ]
@@ -51,10 +54,15 @@ Return ONLY JSON in this format:
     const text = completion.choices[0].message.content ?? "[]";
     const data = JSON.parse(text);
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: "Server error", details: String(error) },
+      { error: "AI failed" },
       { status: 500 }
     );
   }
