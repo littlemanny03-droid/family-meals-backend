@@ -20,8 +20,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content:
-            "You are a food expert. Respond ONLY with valid JSON.",
+          content: "You are a food expert. Respond ONLY with valid JSON.",
         },
         {
           role: "user",
@@ -41,10 +40,15 @@ Return ONLY JSON in this format:
     const meals = JSON.parse(text);
 
     return Response.json({ meals });
-  } catch (error) {
-    console.error(error);
+
+  } catch (error: any) {
+    console.error("OPENAI ERROR:", error);
+
     return Response.json(
-      { error: "AI request failed" },
+      {
+        error: "AI request failed",
+        details: error?.message ?? String(error),
+      },
       { status: 500 }
     );
   }
