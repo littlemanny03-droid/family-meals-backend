@@ -1,29 +1,58 @@
-import { NextResponse } from "next/server";
+import OpenAI from "openai";
 
-// GET — browser test
-export function GET() {
-  return NextResponse.json({
-    status: "API is live 🚀",
-    message: "Use POST to get AI meal suggestions",
-  });
-}
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-// POST — placeholder (AI comes next)
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { country } = body;
+  try {
+    const { country } = await req.json();
 
-  if (!country) {
-    return NextResponse.json(
-      { error: "Country is required" },
-      { status: 400 }
+    if (!country) {
+      return Response.json(
+        { error: "Country is required" },
+        { status: 400 }
+      );
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a food expert. Respond ONLY with valid JSON.",
+        },
+        {
+          role: "user",
+          content: `
+Give 5 popular meals from ${country}.
+Return ONLY JSON in this format:
+[
+  { "name": "Meal name", "imagePrompt": "short food description" }
+]
+          `,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const text = completion.choices[0].message.content ?? "[]";
+    const meals = JSON.parse(text);
+
+    return Response.json({ meals });
+  } catch (error) {
+    console.error(error);
+    return Response.json(
+      { error: "AI request failed" },
+      { status: 500 }
     );
   }
+}
 
-  return NextResponse.json({
-    meals: [
-      { name: `Sample dish from ${country}` },
-      { name: `Another popular meal from ${country}` },
-    ],
+export function GET() {
+  return Response.json({
+    status: "API is live 🚀",
+    message: "Use POST to get AI meal suggestions",
   });
 }
