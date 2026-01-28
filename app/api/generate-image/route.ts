@@ -31,12 +31,15 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ url: imageUrl });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Image generation failed" },
-      { status: 500 }
-    );
-  }
+  } catch (error: any) {
+  console.error("IMAGE ERROR:", error?.message || error);
+
+  return NextResponse.json(
+    {
+      error: "Image generation failed",
+      details: error?.message ?? "Unknown error"
+    },
+    { status: 500 }
+  );
+ }
 }
