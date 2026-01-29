@@ -17,29 +17,41 @@ export async function POST(req: Request) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.7,
       messages: [
         {
           role: "system",
-          content: "You are a food expert. Respond ONLY with valid JSON.",
+          content: `
+You are a local food expert.
+
+Rules:
+- Suggest REAL, well-known traditional dishes.
+- No explanations.
+- No emojis.
+- No repetition.
+- Keep dish names under 5 words.
+- Respond ONLY with valid JSON.
+          `.trim(),
         },
         {
           role: "user",
           content: `
-Give 5 popular meals from ${country}.
-Return ONLY JSON in this format:
+Country: ${country}
+
+Return exactly 5 dishes in this JSON format:
+
 [
-  { "name": "Meal name", "imagePrompt": "short food description" }
+  { "name": "Dish name" }
 ]
-          `,
+          `.trim(),
         },
       ],
-      temperature: 0.7,
     });
 
     const text = completion.choices[0].message.content ?? "[]";
     const meals = JSON.parse(text);
 
-    return Response.json({ meals });
+    return Response.json(meals);
 
   } catch (error: any) {
     console.error("OPENAI ERROR:", error);
