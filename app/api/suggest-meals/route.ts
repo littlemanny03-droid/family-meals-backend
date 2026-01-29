@@ -4,6 +4,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+export async function GET() {
+  return Response.json({
+    status: "API is live 🚀",
+    message: "Use POST to get AI meal suggestions",
+  });
+}
+
 export async function POST(req: Request) {
   try {
     const { country } = await req.json();
@@ -20,15 +27,16 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content:
-            "You are a food expert. Respond ONLY with valid JSON. No explanations.",
+          content: `
+You are a local food expert.
+Return ONLY valid JSON.
+Suggest 5 real traditional dishes.
+No explanations.
+`,
         },
         {
           role: "user",
-          content: `Give 5 popular traditional meals from ${country} in this format:
-[
-  { "name": "Meal name" }
-]`,
+          content: `Country: ${country}`,
         },
       ],
       temperature: 0.7,
@@ -37,23 +45,12 @@ export async function POST(req: Request) {
     const text = completion.choices[0].message.content ?? "[]";
     const meals = JSON.parse(text);
 
-    return Response.json(meals);
+    return Response.json({ meals });
   } catch (error: any) {
-    console.error("OPENAI ERROR:", error);
-
+    console.error(error);
     return Response.json(
-      {
-        error: "AI request failed",
-        details: error?.message ?? String(error),
-      },
+      { error: "AI request failed", details: String(error) },
       { status: 500 }
     );
   }
-}
-
-export function GET() {
-  return Response.json({
-    status: "API is live 🚀",
-    message: "Use POST to get AI meal suggestions",
-  });
 }
