@@ -16,6 +16,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    console.log(
+      "🔑 KEY PREFIX:",
+      process.env.OPENAI_API_KEY?.slice(0, 7)
+    );
+
     const { country } = await req.json();
 
     if (!country) {
