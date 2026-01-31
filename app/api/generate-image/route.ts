@@ -1,7 +1,7 @@
-import OpenAI from "openai";
-
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -18,27 +18,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await openai.images.generate({
+    const image = await openai.images.generate({
       model: "gpt-image-1",
-      prompt,
+      prompt: `Professional food photography of ${prompt}`,
       size: "1024x1024",
     });
 
-    // ✅ SAFE GUARD (this fixes your error)
-    const imageUrl = result.data?.[0]?.url;
+    const imageUrl = image.data?.[0]?.url;
 
     if (!imageUrl) {
-      return Response.json(
-        { error: "Image generation returned no data" },
-        { status: 500 }
-      );
+      throw new Error("Image generation failed");
     }
 
     return Response.json({ imageUrl });
-
   } catch (error: any) {
     console.error("IMAGE ERROR:", error);
-
     return Response.json(
       {
         error: "Image generation failed",
