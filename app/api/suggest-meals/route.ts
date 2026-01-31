@@ -35,25 +35,46 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: `
-You are a local food expert.
-Return ONLY valid JSON.
-Suggest 5 real traditional dishes.
-No explanations.
-`,
+          content:
+            "Return ONLY raw JSON. No markdown. No backticks. No explanations.",
         },
         {
           role: "user",
-          content: `Country: ${country}`,
+          content: `
+Country: ${country}
+
+Return exactly 5 dishes in this format:
+[
+  { "name": "Dish name" }
+]
+`,
         },
       ],
       temperature: 0.7,
     });
 
-    const text = completion.choices[0].message.content ?? "[]";
-    const meals = JSON.parse(text);
+    // ✅ FIX STARTS HERE
+    const raw = completion.choices[0].message.content ?? "";
+
+    const cleaned = raw
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let meals;
+    try {
+      meals = JSON.parse(cleaned);
+    } catch {
+      console.error("❌ JSON PARSE FAILED:", cleaned);
+      return Response.json(
+        { error: "Invalid JSON from AI", raw: cleaned },
+        { status: 500 }
+      );
+    }
+    // ✅ FIX ENDS HERE
 
     return Response.json({ meals });
+
   } catch (error: any) {
     console.error("OPENAI ERROR:", error);
 
