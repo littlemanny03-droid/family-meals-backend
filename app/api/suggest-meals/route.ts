@@ -1,5 +1,7 @@
 export const runtime = "nodejs";
 
+console.log("🔥 NODE RUNTIME ROUTE LOADED 🔥");
+
 import OpenAI from "openai";
 
 const openai = new OpenAI({
