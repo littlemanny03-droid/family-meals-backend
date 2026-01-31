@@ -1,60 +1,49 @@
+import OpenAI from "openai";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function GET() {
-  return Response.json({
-    status: "API is live 🚀",
-    message: "Use POST to get AI meal suggestions",
-  });
-}
-
 export async function POST(req: Request) {
-  console.log("🟢 RUNTIME CHECK:", process.env.NEXT_RUNTIME);
-
   try {
-    const { country } = await req.json();
+    const { prompt } = await req.json();
 
-    if (!country) {
+    if (!prompt) {
       return Response.json(
-        { error: "Country is required" },
+        { error: "Prompt is required" },
         { status: 400 }
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `
-You are a local food expert.
-Return ONLY valid JSON.
-Suggest 5 real traditional dishes.
-No explanations.
-          `,
-        },
-        {
-          role: "user",
-          content: `Country: ${country}`,
-        },
-      ],
-      temperature: 0.7,
+    const result = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt,
+      size: "1024x1024",
     });
 
-    const text = completion.choices[0].message.content ?? "[]";
-    const meals = JSON.parse(text);
+    // ✅ SAFE GUARD (this fixes your error)
+    const imageUrl = result.data?.[0]?.url;
 
-    return Response.json({ meals });
+    if (!imageUrl) {
+      return Response.json(
+        { error: "Image generation returned no data" },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({ imageUrl });
+
   } catch (error: any) {
-    console.error("❌ OPENAI ERROR:", error);
+    console.error("IMAGE ERROR:", error);
+
     return Response.json(
-      { error: "AI request failed", details: String(error) },
+      {
+        error: "Image generation failed",
+        details: error?.message ?? String(error),
+      },
       { status: 500 }
     );
   }
