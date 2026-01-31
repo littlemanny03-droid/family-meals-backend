@@ -1,45 +1,61 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import OpenAI from "openai";
-import { NextResponse } from "next/server";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function POST(req: Request) {
-  try {
-    const { prompt } = await req.json();
+export async function GET() {
+  return Response.json({
+    status: "API is live 🚀",
+    message: "Use POST to get AI meal suggestions",
+  });
+}
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required" },
+export async function POST(req: Request) {
+  console.log("🟢 RUNTIME CHECK:", process.env.NEXT_RUNTIME);
+
+  try {
+    const { country } = await req.json();
+
+    if (!country) {
+      return Response.json(
+        { error: "Country is required" },
         { status: 400 }
       );
     }
 
-    const result = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt,
-      size: "auto",
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a local food expert.
+Return ONLY valid JSON.
+Suggest 5 real traditional dishes.
+No explanations.
+          `,
+        },
+        {
+          role: "user",
+          content: `Country: ${country}`,
+        },
+      ],
+      temperature: 0.7,
     });
 
-    const imageUrl = result.data?.[0]?.url;
+    const text = completion.choices[0].message.content ?? "[]";
+    const meals = JSON.parse(text);
 
-    if (!imageUrl) {
-      return NextResponse.json(
-        { error: "No image returned from AI" },
-        { status: 500 }
-      );
-    }
-
+    return Response.json({ meals });
   } catch (error: any) {
-  console.error("IMAGE ERROR:", error?.message || error);
-
-  return NextResponse.json(
-    {
-      error: "Image generation failed",
-      details: error?.message ?? "Unknown error"
-    },
-    { status: 500 }
-  );
- }
+    console.error("❌ OPENAI ERROR:", error);
+    return Response.json(
+      { error: "AI request failed", details: String(error) },
+      { status: 500 }
+    );
+  }
 }

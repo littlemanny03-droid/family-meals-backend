@@ -1,6 +1,5 @@
 export const runtime = "nodejs";
-
-console.log("🔥 NODE RUNTIME ROUTE LOADED 🔥");
+export const dynamic = "force-dynamic";
 
 import OpenAI from "openai";
 
